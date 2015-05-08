@@ -31,6 +31,7 @@ import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Result;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
+import java.io.File;
 import java.io.IOException;
 import org.apache.commons.io.FileUtils;
 import static org.junit.Assert.assertTrue;
@@ -70,7 +71,7 @@ public class FileSetTest {
         project.getBuildersList().add(new TestBuilder() {
             @Override
             public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-                build.getWorkspace().child("aaa\\aaa.Tests.dll").write("La donna è mobile, qual più mal vento", "UTF-8");
+                build.getWorkspace().child("aaa\\aaa.Tests.dll").write("La donna Ã¨ mobile, qual piÃ¹ mal vento", "UTF-8");
                 build.getWorkspace().child("vstest.console.exe").chmod(700);
                 return true;
             }
@@ -82,6 +83,6 @@ public class FileSetTest {
         String s = FileUtils.readFileToString(build.getLogFile());
         //assertTrue(s.contains("no file matches the pattern **\\*.Tests.dll"));
         //String content = build.getWorkspace().child("AssemblyVersion.cs").readToString();
-        assertTrue(s.contains("aaa\\aaa.Tests.dll"));
+        assertTrue(s.contains("aaa" + File.separator + "aaa.Tests.dll"));
     }
 }
