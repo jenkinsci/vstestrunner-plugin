@@ -26,11 +26,11 @@ package org.jenkinsci.plugins.vstest_runner;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
-import hudson.model.Cause;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Result;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.junit.Rule;
@@ -66,7 +66,7 @@ public class FileSetTest {
         builder.setCmdLineArgs("");
         builder.setFailBuild(true);
         project.getBuildersList().add(builder);
-        FreeStyleBuild build = project.scheduleBuild2(0, new Cause.UserIdCause()).get();
+        FreeStyleBuild build = project.scheduleBuild2(0).get();
         j.assertBuildStatus(Result.FAILURE, build);
         j.assertLogContains("no files matching the pattern **\\*.Tests", build);
     }
@@ -80,7 +80,7 @@ public class FileSetTest {
         builder.setTestFiles("**\\*.Tests.dll");
         builder.setSettings("");
         builder.setTests("");
-        builder.setTestCaseFilter("Priority=1|TestCategory=Odd Nightly");
+        builder.setTestCaseFilter("");
         builder.setEnablecodecoverage(true);
         builder.setInIsolation(true);
         builder.setUseVsixExtensions(false);
@@ -99,9 +99,8 @@ public class FileSetTest {
 
         });
         project.getBuildersList().add(builder);
-        FreeStyleBuild build = project.scheduleBuild2(0, new Cause.UserIdCause()).get();
+        FreeStyleBuild build = project.scheduleBuild2(0).get();
         j.assertBuildStatus(Result.FAILURE, build);
-        j.assertLogContains("/TestCaseFilter:\"Priority=1|TestCategory=Odd Nightly\"", build);
-        j.assertLogContains("aaa/aaa.Tests.dll", build);
+        j.assertLogContains("aaa" + File.separator + "aaa.Tests.dll", build);
     }
 }
