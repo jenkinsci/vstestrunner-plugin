@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.net.URI;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.AbortException;
@@ -487,7 +488,14 @@ public class VsTestBuilder extends Builder implements SimpleBuildStep {
      * @throws IOException
      */
     /* package */ String relativize(FilePath base, String path) throws InterruptedException, IOException {
-        return base.toURI().relativize(new java.io.File(path).toURI()).getPath();
+	try {
+		String urlencoded =  path.replace('\\', '/').replace(" ", "%20") ;
+		URI pathUri = new URI("file:///" + urlencoded);
+		return base.toURI().relativize(pathUri).getPath();
+	} catch(java.net.URISyntaxException e)
+	{
+		throw new IOException(e.toString());
+	}
     }
 
     /**
