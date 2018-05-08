@@ -444,7 +444,7 @@ public class VsTestBuilder extends Builder implements SimpleBuildStep {
             if (!StringUtils.isBlank(testFile)) {
                 try {
                     for (FilePath filePath : workspace.list(testFile)) {
-                        files.add(appendQuote(relativize(workspace, filePath.getRemote())));
+                        files.add(appendQuote(relativize(workspace, filePath)));
                     }
                 } catch (IOException ignored) {
                 }
@@ -486,8 +486,8 @@ public class VsTestBuilder extends Builder implements SimpleBuildStep {
      * @throws InterruptedException
      * @throws IOException
      */
-    /* package */ String relativize(FilePath base, String path) throws InterruptedException, IOException {
-        return base.toURI().relativize(new java.io.File(path).toURI()).getPath();
+    /* package */ String relativize(FilePath base, FilePath path) throws InterruptedException, IOException {
+        return base.toURI().relativize(path.toURI()).getPath();
     }
 
     /**
@@ -526,10 +526,10 @@ public class VsTestBuilder extends Builder implements SimpleBuildStep {
             String coveragePathRelativeToWorkspace = null;
 
             if (trxFullPath != null) {
-                trxPathRelativeToWorkspace = relativize(workspace, trxFullPath);
+                trxPathRelativeToWorkspace = relativize(workspace, workspace.child(trxFullPath));
             }
             if (coverageFullPath != null) {
-                coveragePathRelativeToWorkspace = relativize(workspace, parserListener.getCoverageFile());
+                coveragePathRelativeToWorkspace = relativize(workspace, workspace.child(parserListener.getCoverageFile()));
             }
 
             run.addAction(new AddVsTestEnvVarsAction(trxPathRelativeToWorkspace, coveragePathRelativeToWorkspace));

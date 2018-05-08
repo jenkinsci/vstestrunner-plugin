@@ -17,7 +17,7 @@ import static org.hamcrest.Matchers.is;
 public class FilePatternTest {
 
     private FilePath workspace;
-    private File subfolder;
+    private FilePath subfolder;
 
     @Before
     public void setUp() throws Exception {
@@ -27,13 +27,12 @@ public class FilePatternTest {
             workspace.deleteRecursive();
         }
         workspace.mkdirs();
-        subfolder = new File(parent, "subfolder");
+        subfolder = workspace.child("subfolder");
         if (subfolder.exists()) {
             boolean delete = subfolder.delete();
             assertThat(delete, is(true));
         }
-        boolean mkdirs = subfolder.mkdirs();
-        assertThat(mkdirs, is(true));
+        subfolder.mkdirs();
     }
 
     @After
@@ -41,16 +40,18 @@ public class FilePatternTest {
         workspace.deleteRecursive();
     }
 
-    private String createFile(File folder, String child) throws Exception {
-        File file = new File(folder, child);
-        boolean newFile = file.createNewFile();
-        assertThat(newFile, is(true));
-        return file.getAbsolutePath();
+    private FilePath createFile(FilePath folder, String child) throws Exception {
+        FilePath file = new FilePath(folder, child);
+        File newFile = new File(file.getRemote());
+        boolean createdNewFile = newFile.createNewFile();
+        assertThat(createdNewFile, is(true));
+        assertThat(file.exists(), is(true));
+        return file;
     }
 
     @Test
     public void testGetTestFilesArgument() throws Exception {
-        String absolutePath = createFile(subfolder, "testfile.trx");
+        FilePath absolutePath = createFile(subfolder, "testfile.trx");
         VsTestBuilder step = new VsTestBuilder();
         step.setTestFiles("**/*.trx");
         EnvVars envVars = new EnvVars();
@@ -87,7 +88,7 @@ public class FilePatternTest {
 
     @Test
     public void testRelativePath() throws Exception {
-        String absolutePath = createFile(subfolder, "testfile1.trx");
+        FilePath absolutePath = createFile(subfolder, "testfile1.trx");
         VsTestBuilder step = new VsTestBuilder();
         String relativePath = step.relativize(workspace, absolutePath);
         step.setTestFiles(relativePath);
