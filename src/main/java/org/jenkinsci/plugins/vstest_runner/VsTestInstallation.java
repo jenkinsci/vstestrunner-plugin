@@ -102,7 +102,6 @@ public class VsTestInstallation extends ToolInstallation implements NodeSpecific
         String defaultVSTestExe = isWindows() ? "vstest.console.exe" : "vstest.console";
         VsTestInstallation tool = new VsTestInstallation(DEFAULT, defaultVSTestExe);
         descriptor.setInstallations(tool);
-        descriptor.save();
     }
 
     private static VsTestInstallation[] getInstallations(DescriptorImpl descriptor) {
@@ -130,6 +129,10 @@ public class VsTestInstallation extends ToolInstallation implements NodeSpecific
     @Extension
     public static class DescriptorImpl extends ToolDescriptor<VsTestInstallation> {
 
+        public DescriptorImpl() {
+            load();
+        }
+
         public String getDisplayName() {
             return Messages.VsTestInstallation_DisplayName();
         }
@@ -142,6 +145,12 @@ public class VsTestInstallation extends ToolInstallation implements NodeSpecific
                 }
             }
             return null;
+        }
+
+        @Override
+        public void setInstallations(VsTestInstallation... installations) {
+            super.setInstallations(installations);
+            save();
         }
 
     }
