@@ -1,22 +1,24 @@
 package org.jenkinsci.plugins.vstest_runner;
 
-import java.io.File;
-import java.io.IOException;
-
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
+import hudson.model.EnvironmentSpecific;
+import hudson.model.Node;
+import hudson.model.TaskListener;
+import hudson.slaves.NodeSpecific;
 import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
-import org.kohsuke.stapler.DataBoundConstructor;
-
-import hudson.model.TaskListener;
-import hudson.model.Node;
-import hudson.slaves.NodeSpecific;
-import hudson.model.EnvironmentSpecific;
 import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.StaplerRequest;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Array;
 
 /**
  * @author Yasuyuki Saito
@@ -90,29 +92,15 @@ public class VsTestInstallation extends ToolInstallation implements NodeSpecific
 
     @Initializer(after = InitMilestone.EXTENSIONS_AUGMENTED)
     public static void onLoaded() {
-        DescriptorImpl descriptor = (DescriptorImpl) Jenkins.getInstance().getDescriptor(VsTestInstallation.class);
-        VsTestInstallation[] installations = getInstallations(descriptor);
-
+        DescriptorImpl descriptor = (VsTestInstallation.DescriptorImpl) Jenkins.getInstance().getDescriptor(VsTestInstallation.class);
+        VsTestInstallation[] installations = descriptor.getInstallations();
         if (installations != null && installations.length > 0) {
-            // No need to initialize if there's already something
             return;
         }
-
-
         String defaultVSTestExe = isWindows() ? "vstest.console.exe" : "vstest.console";
         VsTestInstallation tool = new VsTestInstallation(DEFAULT, defaultVSTestExe);
         descriptor.setInstallations(tool);
         descriptor.save();
-    }
-
-    private static VsTestInstallation[] getInstallations(DescriptorImpl descriptor) {
-        VsTestInstallation[] installations = null;
-        try {
-            installations = descriptor.getInstallations();
-        } catch (NullPointerException e) {
-            installations = new VsTestInstallation[0];
-        }
-        return installations;
     }
 
     @Override
@@ -130,8 +118,21 @@ public class VsTestInstallation extends ToolInstallation implements NodeSpecific
     @Extension
     public static class DescriptorImpl extends ToolDescriptor<VsTestInstallation> {
 
+        public DescriptorImpl() {
+            super();
+            load();
+        }
+
         public String getDisplayName() {
             return Messages.VsTestInstallation_DisplayName();
+        }
+
+        @Override
+        public boolean configure(StaplerRequest req, JSONObject json) {
+            setInstallations(req.bindJSONToList(VsTestInstallation.class, json.get("tool"))
+                    .toArray((VsTestInstallation[]) Array.newInstance(VsTestInstallation.class, 0)));
+            save();
+            return true;
         }
 
         @Nullable
