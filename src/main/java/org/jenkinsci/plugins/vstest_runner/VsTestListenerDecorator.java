@@ -26,62 +26,60 @@ public class VsTestListenerDecorator extends LineTransformationOutputStream {
 
     private final OutputStream listener;
 
-    private final Pattern trxPattern;
-    private final Pattern attachmentsPattern;
-    private final Pattern coveragePattern;
+    private final Pattern trxPattern = Pattern.compile(TRX_PATTERN);
+    private final Pattern attachmentsPattern = Pattern.compile(ATTACHMENTS_PATTERN);
+    private final Pattern coveragePattern = Pattern.compile(COVERAGE_PATTERN);
 
     private boolean attachmentsSection;
 
     private String trxFile;
     private String coverageFile;
 
-    public VsTestListenerDecorator(TaskListener listener) throws FileNotFoundException {
+    public VsTestListenerDecorator(TaskListener listener) {
         this.listener = listener != null ? listener.getLogger() : null;
-
-        trxFile = null;
-        coverageFile = null;
-
-        this.attachmentsSection = false;
-        this.trxPattern = Pattern.compile(TRX_PATTERN);
-        this.attachmentsPattern = Pattern.compile(ATTACHMENTS_PATTERN);
-        this.coveragePattern = Pattern.compile(COVERAGE_PATTERN);
     }
 
     public String getTrxFile() {
-        return this.trxFile;
+        return trxFile;
     }
 
     public String getCoverageFile() {
-        return this.coverageFile;
+        return coverageFile;
     }
 
     @Override
     protected void eol(byte[] bytes, int len) throws IOException {
 
-        if (this.listener == null) {
+        if (listener == null) {
             return;
         }
 
         String line = new String(bytes, 0, len, Charset.defaultCharset());
 
-        Matcher trxMatcher = this.trxPattern.matcher(line);
+        Matcher trxMatcher = trxPattern.matcher(line);
         if (trxMatcher.find()) {
-            this.trxFile = trxMatcher.group(TRX_GROUP);
+            trxFile = trxMatcher.group(TRX_GROUP);
         }
 
-        if (!this.attachmentsSection) {
-            Matcher attachmentsMatcher = this.attachmentsPattern.matcher(line);
+        if (!attachmentsSection) {
+            Matcher attachmentsMatcher = attachmentsPattern.matcher(line);
 
             if (attachmentsMatcher.matches()) {
-                this.attachmentsSection = true;
+                attachmentsSection = true;
             }
         } else {
-            Matcher coverageMatcher = this.coveragePattern.matcher(line);
+            Matcher coverageMatcher = coveragePattern.matcher(line);
             if (coverageMatcher.find()) {
-                this.coverageFile = coverageMatcher.group(COVERAGE_GROUP);
+                coverageFile = coverageMatcher.group(COVERAGE_GROUP);
             }
         }
 
-        this.listener.write(line.getBytes(Charset.defaultCharset()));
+        listener.write(line.getBytes(Charset.defaultCharset()));
+    }
+
+    @Override
+    public void close() throws IOException {
+        super.close();
+        listener.close();
     }
 }

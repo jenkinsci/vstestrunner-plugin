@@ -93,6 +93,7 @@ public class VsTestInstallation extends ToolInstallation implements NodeSpecific
     @Initializer(after = InitMilestone.EXTENSIONS_AUGMENTED)
     public static void onLoaded() {
         DescriptorImpl descriptor = (VsTestInstallation.DescriptorImpl) Jenkins.getInstance().getDescriptor(VsTestInstallation.class);
+        assert descriptor != null;
         VsTestInstallation[] installations = descriptor.getInstallations();
         if (installations != null && installations.length > 0) {
             return;

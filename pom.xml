@@ -7,8 +7,8 @@
   </parent>
   
   <properties>
-    <jenkins.version>2.7.4</jenkins.version>
-    <java.level>7</java.level>
+    <jenkins.version>2.60.3</jenkins.version>
+    <java.level>8</java.level>
   </properties>
 
   <artifactId>vstestrunner</artifactId>
@@ -47,7 +47,7 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>structs</artifactId>
-      <version>1.14</version>
+      <version>1.17</version>
     </dependency>
   </dependencies>
   

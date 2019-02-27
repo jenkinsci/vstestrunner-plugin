@@ -304,7 +304,7 @@ public class VsTestBuilder extends Builder implements SimpleBuildStep {
      */
     @Override
     public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull Launcher launcher, @NonNull TaskListener listener) throws InterruptedException, IOException {
-        ArrayList<String> args = new ArrayList<String>();
+        ArrayList<String> args = new ArrayList<>();
 
         EnvVars env = run.getEnvironment(listener);
 
@@ -392,8 +392,7 @@ public class VsTestBuilder extends Builder implements SimpleBuildStep {
      * @return
      */
     private String replaceMacro(String value, EnvVars env) {
-        String result = Util.replaceMacro(value, env);
-        return result;
+        return Util.replaceMacro(value, env);
     }
 
     /**
