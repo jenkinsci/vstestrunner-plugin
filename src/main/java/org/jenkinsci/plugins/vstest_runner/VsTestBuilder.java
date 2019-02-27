@@ -57,7 +57,7 @@ public class VsTestBuilder extends Builder implements SimpleBuildStep {
     transient private String otherLogger;
     @Deprecated
     transient private String otherPlatform;
-    private boolean doNotUseChcpCommand = false;
+    private boolean doNotUseChcpCommand;
     private boolean inIsolation;
     private boolean useVsixExtensions;
     private boolean useVs2017Plus;
