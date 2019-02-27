@@ -68,6 +68,11 @@ public class VsTestListenerDecorator extends LineTransformationOutputStream {
 
         String line = ConsoleNote.removeNotes(charset.decode(ByteBuffer.wrap(bytes, 0, len)).toString());
 
+        // Newer versions of vstest are outputting nul bytes in version headers which frequently
+        // causes the ^Results file from being parsed.
+        // https://developercommunity.visualstudio.com/content/problem/221619/unit-test-report-shows-multiple.html
+        line = line.replaceAll("\0", "");
+
         Matcher trxMatcher = this.trxPattern.matcher(line);
         if (trxMatcher.find()) {
             this.trxFile = trxMatcher.group(TRX_GROUP);
