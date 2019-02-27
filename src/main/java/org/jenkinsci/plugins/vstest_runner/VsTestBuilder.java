@@ -28,6 +28,7 @@ import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.ComboBoxModel;
+import hudson.util.LineEndingConversion;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
@@ -521,13 +522,13 @@ public class VsTestBuilder extends Builder implements SimpleBuildStep {
             if (!doNotUseChcpCommand) {
                 final int cpi = getCodePageIdentifier(run.getCharset());
                 if (cpi != 0) {
-                    script.append(String.format("chcp %s\r\n", String.valueOf(cpi)));
+                    script.append(String.format("chcp %s%n", String.valueOf(cpi)));
                 }
             }
             script.append(concatString(args));
-            script.append("\r\nexit %%ERRORLEVEL%%");
+            script.append(String.format("%nexit %%ERRORLEVEL%%"));
 
-            tmpDir = workspace.createTextTempFile("vstest", ".bat", script.toString(), false);
+            tmpDir = workspace.createTextTempFile("vstest", ".bat", LineEndingConversion.convertEOL(script.toString(),LineEndingConversion.EOLType.Windows), false);
             cmdExecArgs.add("cmd", "/c", "call", tmpDir.getRemote());
         } else {
             for (String arg : args) {
