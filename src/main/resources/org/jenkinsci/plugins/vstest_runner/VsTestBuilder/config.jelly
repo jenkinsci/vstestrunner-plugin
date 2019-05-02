@@ -30,6 +30,11 @@
 
     <f:advanced>
 
+        <f:entry title="${%Do not use chcp command}" field="doNotUseChcpCommand">
+            <f:checkbox name="descriptor.doNotUseChcpCommand" value="${descriptor.doNotUseChcpCommand}"
+                        checked="${descriptor.doNotUseChcpCommand}" default="false"/>
+        </f:entry>
+
         <f:entry title="${%InIsolation}" field="inIsolation">
             <f:checkbox/>
         </f:entry>

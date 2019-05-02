@@ -9,6 +9,8 @@ import java.util.regex.Pattern;
 
 import hudson.console.LineTransformationOutputStream;
 import hudson.model.TaskListener;
+import hudson.console.ConsoleNote;
+import java.nio.ByteBuffer;
 
 /**
  * @author a.filatov
@@ -24,7 +26,8 @@ public class VsTestListenerDecorator extends LineTransformationOutputStream {
     private final static String COVERAGE_PATTERN = "^\\s*(.*\\.coverage)$";
     private final static int COVERAGE_GROUP = 1;
 
-    private final OutputStream listener;
+    private final OutputStream out;
+    private final Charset charset;
 
     private final Pattern trxPattern;
     private final Pattern attachmentsPattern;
@@ -35,8 +38,9 @@ public class VsTestListenerDecorator extends LineTransformationOutputStream {
     private String trxFile;
     private String coverageFile;
 
-    public VsTestListenerDecorator(TaskListener listener) throws FileNotFoundException {
-        this.listener = listener != null ? listener.getLogger() : null;
+    public VsTestListenerDecorator(OutputStream out, Charset charset) throws FileNotFoundException {
+        this.out = out;
+        this.charset = charset;
 
         trxFile = null;
         coverageFile = null;
@@ -58,11 +62,16 @@ public class VsTestListenerDecorator extends LineTransformationOutputStream {
     @Override
     protected void eol(byte[] bytes, int len) throws IOException {
 
-        if (this.listener == null) {
+        if (this.out == null) {
             return;
         }
 
-        String line = new String(bytes, 0, len, Charset.defaultCharset());
+        String line = ConsoleNote.removeNotes(charset.decode(ByteBuffer.wrap(bytes, 0, len)).toString());
+
+        // Newer versions of vstest are outputting nul bytes in version headers which frequently
+        // causes the ^Results file from being parsed.
+        // https://developercommunity.visualstudio.com/content/problem/221619/unit-test-report-shows-multiple.html
+        line = line.replaceAll("\0", "");
 
         Matcher trxMatcher = this.trxPattern.matcher(line);
         if (trxMatcher.find()) {
@@ -82,6 +91,12 @@ public class VsTestListenerDecorator extends LineTransformationOutputStream {
             }
         }
 
-        this.listener.write(line.getBytes(Charset.defaultCharset()));
+        out.write(bytes, 0, len);
+    }
+
+    @Override
+    public void close() throws IOException {
+        super.close();
+        out.close();
     }
 }

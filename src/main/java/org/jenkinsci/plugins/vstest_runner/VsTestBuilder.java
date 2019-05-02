@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.nio.charset.Charset;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.AbortException;
@@ -27,6 +28,7 @@ import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.ComboBoxModel;
+import hudson.util.LineEndingConversion;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
@@ -56,6 +58,7 @@ public class VsTestBuilder extends Builder implements SimpleBuildStep {
     transient private String otherLogger;
     @Deprecated
     transient private String otherPlatform;
+    private boolean doNotUseChcpCommand;
     private boolean inIsolation;
     private boolean useVsixExtensions;
     private boolean useVs2017Plus;
@@ -136,6 +139,10 @@ public class VsTestBuilder extends Builder implements SimpleBuildStep {
         return failBuild;
     }
 
+    public boolean getDoNotUseChcpCommand() {
+        return doNotUseChcpCommand;
+    }
+
     @DataBoundSetter
     public void setVsTestName(String vsTestName) {
         this.vsTestName = Util.fixEmptyAndTrim(vsTestName);
@@ -187,6 +194,11 @@ public class VsTestBuilder extends Builder implements SimpleBuildStep {
     @DataBoundSetter
     public void setEnablecodecoverage(boolean enablecodecoverage) {
         this.enablecodecoverage = enablecodecoverage;
+    }
+
+    @DataBoundSetter
+    public void setDoNotUseChcpCommand(boolean doNotUseChcpCommand) {
+        this.doNotUseChcpCommand = doNotUseChcpCommand;
     }
 
     @DataBoundSetter
@@ -506,8 +518,18 @@ public class VsTestBuilder extends Builder implements SimpleBuildStep {
         FilePath tmpDir = null;
 
         if (!launcher.isUnix()) {
-            tmpDir = workspace.createTextTempFile("vstest", ".bat", concatString(args), false);
-            cmdExecArgs.add("cmd.exe", "/C", tmpDir.getRemote(), "&&", "exit", "%ERRORLEVEL%");
+            StringBuilder script = new StringBuilder();
+            if (!doNotUseChcpCommand) {
+                final int cpi = getCodePageIdentifier(run.getCharset());
+                if (cpi != 0) {
+                    script.append(String.format("chcp %s%n", String.valueOf(cpi)));
+                }
+            }
+            script.append(concatString(args));
+            script.append(String.format("%nexit %%ERRORLEVEL%%"));
+
+            tmpDir = workspace.createTextTempFile("vstest", ".bat", LineEndingConversion.convertEOL(script.toString(),LineEndingConversion.EOLType.Windows), false);
+            cmdExecArgs.add("cmd", "/c", "call", tmpDir.getRemote());
         } else {
             for (String arg : args) {
                 cmdExecArgs.add(arg);
@@ -517,7 +539,7 @@ public class VsTestBuilder extends Builder implements SimpleBuildStep {
         listener.getLogger().println("Executing VSTest: " + cmdExecArgs.toStringWithQuote());
 
         try {
-            VsTestListenerDecorator parserListener = new VsTestListenerDecorator(listener);
+            VsTestListenerDecorator parserListener = new VsTestListenerDecorator(listener.getLogger(), run.getCharset());
             int r = launcher.launch().cmds(cmdExecArgs).envs(env).stdout(parserListener).pwd(workspace).join();
 
             String trxFullPath = parserListener.getTrxFile();
@@ -603,6 +625,158 @@ public class VsTestBuilder extends Builder implements SimpleBuildStep {
         Node node = null;
         if (computer != null) node = computer.getNode();
         return node != null ? node : Jenkins.getInstance();
+    }
+
+    private static int getCodePageIdentifier(Charset charset) {
+        final String s_charset = charset.name();
+        if(s_charset.equalsIgnoreCase("utf-8"))             // Unicode
+            return 65001;
+        else if(s_charset.equalsIgnoreCase("ibm437"))       // US
+            return 437;
+        else if(s_charset.equalsIgnoreCase("ibm850"))       // OEM Multilingual Latin 1
+            return 850;
+        else if(s_charset.equalsIgnoreCase("ibm852"))       // OEM Latin2
+            return 852;
+        else if(s_charset.equalsIgnoreCase("shift_jis") || s_charset.equalsIgnoreCase("windows-31j"))//Japanese
+            return 932;
+        else if(s_charset.equalsIgnoreCase("us-ascii"))     // US-ASCII
+            return 20127;
+        else if(s_charset.equalsIgnoreCase("euc-jp"))       // Japanese
+            return 20932;
+        else if(s_charset.equalsIgnoreCase("iso-8859-1"))   // Latin 1
+            return 28591;
+        else if(s_charset.equalsIgnoreCase("iso-8859-2"))   // Latin 2
+            return 28592;
+        else if(s_charset.equalsIgnoreCase("IBM00858"))
+            return 858;
+        else if(s_charset.equalsIgnoreCase("IBM775"))
+            return 775;
+        else if(s_charset.equalsIgnoreCase("IBM855"))
+            return 855;
+        else if(s_charset.equalsIgnoreCase("IBM857"))
+            return 857;
+        else if(s_charset.equalsIgnoreCase("ISO-8859-4"))
+            return 28594;
+        else if(s_charset.equalsIgnoreCase("ISO-8859-5"))
+            return 28595;
+        else if(s_charset.equalsIgnoreCase("ISO-8859-7"))
+            return 28597;
+        else if(s_charset.equalsIgnoreCase("ISO-8859-9"))
+            return 28599;
+        else if(s_charset.equalsIgnoreCase("ISO-8859-13"))
+            return 28603;
+        else if(s_charset.equalsIgnoreCase("ISO-8859-15"))
+            return 28605;
+        else if(s_charset.equalsIgnoreCase("KOI8-R"))
+            return 20866;
+        else if(s_charset.equalsIgnoreCase("KOI8-U"))
+            return 21866;
+        else if(s_charset.equalsIgnoreCase("UTF-16"))
+            return 1200;
+        else if(s_charset.equalsIgnoreCase("UTF-32"))
+            return 12000;
+        else if(s_charset.equalsIgnoreCase("UTF-32BE"))
+            return 12001;
+        else if(s_charset.equalsIgnoreCase("windows-1250"))
+            return 1250;
+        else if(s_charset.equalsIgnoreCase("windows-1251"))
+            return 1251;
+        else if(s_charset.equalsIgnoreCase("windows-1252"))
+            return 1252;
+        else if(s_charset.equalsIgnoreCase("windows-1253"))
+            return 1253;
+        else if(s_charset.equalsIgnoreCase("windows-1254"))
+            return 1254;
+        else if(s_charset.equalsIgnoreCase("windows-1257"))
+            return 1257;
+        else if(s_charset.equalsIgnoreCase("Big5"))
+            return 950;
+        else if(s_charset.equalsIgnoreCase("EUC-KR"))
+            return 51949;
+        else if(s_charset.equalsIgnoreCase("GB18030"))
+            return 54936;
+        else if(s_charset.equalsIgnoreCase("GB2312"))
+            return 936;
+        else if(s_charset.equalsIgnoreCase("IBM-Thai"))
+            return 20838;
+        else if(s_charset.equalsIgnoreCase("IBM01140"))
+            return 1140;
+        else if(s_charset.equalsIgnoreCase("IBM01141"))
+            return 1141;
+        else if(s_charset.equalsIgnoreCase("IBM01142"))
+            return 1142;
+        else if(s_charset.equalsIgnoreCase("IBM01143"))
+            return 1143;
+        else if(s_charset.equalsIgnoreCase("IBM01144"))
+            return 1144;
+        else if(s_charset.equalsIgnoreCase("IBM01145"))
+            return 1145;
+        else if(s_charset.equalsIgnoreCase("IBM01146"))
+            return 1146;
+        else if(s_charset.equalsIgnoreCase("IBM01147"))
+            return 1147;
+        else if(s_charset.equalsIgnoreCase("IBM01148"))
+            return 1148;
+        else if(s_charset.equalsIgnoreCase("IBM01149"))
+            return 1149;
+        else if(s_charset.equalsIgnoreCase("IBM037"))
+            return 37;
+        else if(s_charset.equalsIgnoreCase("IBM1026"))
+            return 1026;
+        else if(s_charset.equalsIgnoreCase("IBM273"))
+            return 20273;
+        else if(s_charset.equalsIgnoreCase("IBM277"))
+            return 20277;
+        else if(s_charset.equalsIgnoreCase("IBM278"))
+            return 20278;
+        else if(s_charset.equalsIgnoreCase("IBM280"))
+            return 20280;
+        else if(s_charset.equalsIgnoreCase("IBM284"))
+            return 20284;
+        else if(s_charset.equalsIgnoreCase("IBM285"))
+            return 20285;
+        else if(s_charset.equalsIgnoreCase("IBM297"))
+            return 20297;
+        else if(s_charset.equalsIgnoreCase("IBM420"))
+            return 20420;
+        else if(s_charset.equalsIgnoreCase("IBM424"))
+            return 20424;
+        else if(s_charset.equalsIgnoreCase("IBM500"))
+            return 500;
+        else if(s_charset.equalsIgnoreCase("IBM860"))
+            return 860;
+        else if(s_charset.equalsIgnoreCase("IBM861"))
+            return 861;
+        else if(s_charset.equalsIgnoreCase("IBM863"))
+            return 863;
+        else if(s_charset.equalsIgnoreCase("IBM864"))
+            return 864;
+        else if(s_charset.equalsIgnoreCase("IBM865"))
+            return 865;
+        else if(s_charset.equalsIgnoreCase("IBM869"))
+            return 869;
+        else if(s_charset.equalsIgnoreCase("IBM870"))
+            return 870;
+        else if(s_charset.equalsIgnoreCase("IBM871"))
+            return 20871;
+        else if(s_charset.equalsIgnoreCase("ISO-2022-JP"))
+            return 50220;
+        else if(s_charset.equalsIgnoreCase("ISO-2022-KR"))
+            return 50225;
+        else if(s_charset.equalsIgnoreCase("ISO-8859-3"))
+            return 28593;
+        else if(s_charset.equalsIgnoreCase("ISO-8859-6"))
+            return 28596;
+        else if(s_charset.equalsIgnoreCase("ISO-8859-8"))
+            return 28598;
+        else if(s_charset.equalsIgnoreCase("windows-1255"))
+            return 1255;
+        else if(s_charset.equalsIgnoreCase("windows-1256"))
+            return 1256;
+        else if(s_charset.equalsIgnoreCase("windows-1258"))
+            return 1258;
+        else
+            return 0;
     }
 
     private static class AddVsTestEnvVarsAction implements EnvironmentContributingAction {
