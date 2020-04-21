@@ -7,7 +7,7 @@
   </parent>
   
   <properties>
-    <jenkins.version>2.60.3</jenkins.version>
+    <jenkins.version>2.164.3</jenkins.version>
     <java.level>8</java.level>
   </properties>
 
@@ -47,9 +47,20 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>structs</artifactId>
-      <version>1.17</version>
     </dependency>
   </dependencies>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.jenkins.tools.bom</groupId>
+        <artifactId>bom-2.164.x</artifactId>
+        <version>9</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
   
   <repositories>
     <repository>
