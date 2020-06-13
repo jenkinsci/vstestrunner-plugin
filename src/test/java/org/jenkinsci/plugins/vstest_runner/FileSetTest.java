@@ -104,7 +104,7 @@ public class FileSetTest {
         project.getBuildersList().add(new TestBuilder() {
             public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
                 build.getWorkspace().child("aaa/aaa.Tests.dll").write("La donna è mobile, qual piuma al vento", "UTF-8");
-                build.getWorkspace().child("vstest.console.exe").chmod(700);
+                build.getWorkspace().child("vstest.console.exe").chmod(0700);
                 return true;
             }
 
