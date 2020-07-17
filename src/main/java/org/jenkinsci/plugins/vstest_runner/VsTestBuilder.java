@@ -3,7 +3,7 @@ package org.jenkinsci.plugins.vstest_runner;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -432,7 +432,7 @@ public class VsTestBuilder extends Builder implements SimpleBuildStep {
      * @throws IOException
      */
     /* package */ List<String> getTestFilesArguments(FilePath workspace, EnvVars env) throws InterruptedException {
-        Set<String> files = new HashSet<>();
+        Set<String> files = new LinkedHashSet<>();
 
         StringTokenizer testFilesTokenizer = new StringTokenizer(testFiles, " \t\r\n");
 
